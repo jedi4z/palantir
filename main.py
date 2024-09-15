@@ -83,15 +83,17 @@ class StockMonitor:
 
 @click.command()
 @click.option('--tickers', type=str, required=True, help='List of tickers: AAPL,GOOGL,META')
-def bootstrap(tickers):
+@click.option('--fetch-every', type=int, default=60, help='Time in seconds to wait until refresh the data')
+def bootstrap(tickers, fetch_every):
     tickers = tickers.split(',')
     print(f'Starting monitoring {len(tickers)} tickers: {tickers}')
+    print(f'Refresh every {fetch_every} seconds')
 
     while True:
         for ticker in tickers:
             stock_monitor = StockMonitor(ticker)
             stock_monitor.monitor()
-        time.sleep(60)
+        time.sleep(fetch_every)
 
 if __name__ == "__main__":
     bootstrap()
