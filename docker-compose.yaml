@@ -1,0 +1,9 @@
+services:
+  palantir:
+    build: .
+    container_name: palantir
+    restart: always
+    environment:
+      CHAT_ID: ${CHAT_ID}
+      TELEGRAM_API_KEY: ${TELEGRAM_API_KEY}
+      TICKERS: AAPL,AMZN,GOOGL,META,MSFT,NVDA,TSLA,AVGO,KO,MCD,NKE,ORCL,PLTR,TSM,WMT
