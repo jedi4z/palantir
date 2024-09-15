@@ -3,6 +3,7 @@ import os
 import talib as ta
 import telebot
 import time
+import click
 import yfinance as yf
 
 load_dotenv()
@@ -79,14 +80,11 @@ class StockMonitor:
     def send_telegram_message(self, message):
         bot.send_message(CHAT_ID, message, parse_mode='HTML')
 
-def getTickers():
-  if not TICKERS:
-    return []
-  return TICKERS.split(',')
 
-
-if __name__ == "__main__":
-    tickers = getTickers()
+@click.command()
+@click.option('--tickers', type=str, required=True, help='List of tickers: AAPL,GOOGL,META')
+def bootstrap(tickers):
+    tickers = tickers.split(',')
     print(f'Starting monitoring {len(tickers)} tickers: {tickers}')
 
     while True:
@@ -94,3 +92,6 @@ if __name__ == "__main__":
             stock_monitor = StockMonitor(ticker)
             stock_monitor.monitor()
         time.sleep(60)
+
+if __name__ == "__main__":
+    bootstrap()
