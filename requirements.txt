@@ -1,0 +1,4 @@
+yfinance
+telebot
+TA-Lib
+python-dotenv
