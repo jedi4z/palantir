@@ -4,6 +4,7 @@ import talib as ta
 import telebot
 import time
 import click
+import logging
 import yfinance as yf
 
 load_dotenv()
@@ -15,6 +16,16 @@ TICKERS = os.getenv('TICKERS')
 # Telegram bot setup
 bot = telebot.TeleBot(TELEGRAM_API_KEY, parse_mode=None)
 
+# Set up logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("monitor.log")
+    ]
+)
+
 class StockMonitor:
     def __init__(self, ticker, bb_period=20, rsi_period=21, ma_period=200, upper=67, lower=43):
         self.ticker = ticker
@@ -25,8 +36,7 @@ class StockMonitor:
         self.lower = lower
     
     def fetch_ohlcv(self):
-        print(f'fetching data for {self.ticker}')
-        data = yf.download(self.ticker, period='6mo', interval='1d')
+        data = yf.download(self.ticker, period='6mo', interval='1d', progress=False)
         close_prices = data['Close'].values
         high_prices = data['High'].values
         low_prices = data['Low'].values
@@ -47,7 +57,7 @@ class StockMonitor:
         last_ma = ma[-1]
 
         if (last_low <= last_bb_lower) and (last_rsi <= self.lower):
-            return (
+            signal = (
                 f"<b>Buy Signal for {self.ticker}:</b>\n"
                 f"<i>Lower Price</i>: {last_low:.2f}\n"
                 f"<i>Lower Bollinger Band</i>: {last_bb_lower:.2f}\n"
@@ -55,10 +65,11 @@ class StockMonitor:
                 f"<i>Condition</i>: Price below lower Bollinger Band and RSI below threshold.\n"
                 f"🔥🔥🔥🔥🔥🔥"
             )
+            logging.info(f"Buy signal generated for {self.ticker}")
         elif (last_high >= last_bb_upper) \
           and (last_high > last_ma) \
           and (last_rsi >= self.upper):
-            return (
+            signal = (
                 f"<b>Sell Signal for {self.ticker}:</b>\n"
                 f"<i>Highest Price</i>: {last_high:.2f}\n"
                 f"<i>Upper Bollinger Band</i>: {last_bb_upper:.2f}\n"
@@ -66,8 +77,12 @@ class StockMonitor:
                 f"<i>Condition</i>: Price above upper Bollinger Band and RSI above threshold.\n"
                 f"💎💎💎💎💎💎"
             )
+            logging.info(f"Sell signal generated for {self.ticker}")
         else:
-            return f"<i>No signal for {self.ticker}.</i>"
+            signal = f"<i>No signal for {self.ticker}.</i>"
+            logging.info(f"No signal generated for {self.ticker}")
+        
+        return signal
     
     def monitor(self):
         close_prices, high_prices, low_prices = self.fetch_ohlcv()
@@ -75,7 +90,6 @@ class StockMonitor:
         signal = self.check_signals(close_prices, high_prices, low_prices, bb_upper_band, bb_lower_band, rsi, ma)
         if "No signal" not in signal:
             self.send_telegram_message(signal)
-        print(signal)
     
     def send_telegram_message(self, message):
         bot.send_message(CHAT_ID, message, parse_mode='HTML')
@@ -86,8 +100,8 @@ class StockMonitor:
 @click.option('--fetch-every', type=int, default=60, help='Time in seconds to wait until refresh the data')
 def bootstrap(tickers, fetch_every):
     tickers = tickers.split(',')
-    print(f'Starting monitoring {len(tickers)} tickers: {tickers}')
-    print(f'Refresh every {fetch_every} seconds')
+    logging.info(f'Starting monitoring {len(tickers)} tickers: {tickers}')
+    logging.info(f'Refresh every {fetch_every} seconds')
 
     while True:
         for ticker in tickers:
