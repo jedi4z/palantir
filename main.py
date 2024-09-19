@@ -36,7 +36,7 @@ class StockMonitor:
         self.lower = lower
     
     def fetch_ohlcv(self):
-        data = yf.download(self.ticker, period='6mo', interval='1d', progress=False)
+        data = yf.download(self.ticker, period='6mo', interval='4h', progress=False)
         close_prices = data['Close'].values
         high_prices = data['High'].values
         low_prices = data['Low'].values
@@ -88,8 +88,8 @@ class StockMonitor:
         close_prices, high_prices, low_prices = self.fetch_ohlcv()
         bb_upper_band, bb_lower_band, rsi, ma = self.calculate_indicators(close_prices)
         signal = self.check_signals(close_prices, high_prices, low_prices, bb_upper_band, bb_lower_band, rsi, ma)
-        # if "No signal" not in signal:
-        self.send_telegram_message(signal)
+        if "No signal" not in signal:
+            self.send_telegram_message(signal)
     
     def send_telegram_message(self, message):
         bot.send_message(CHAT_ID, message, parse_mode='HTML')
